@@ -1,1 +1,5 @@
 streamlit
+sqlalchemy
+mysql-connector-python
+eralchemy
+graphviz
