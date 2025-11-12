@@ -17,8 +17,6 @@ create table Customer(
     marital_status boolean
 );
 
--- store and supplier could be seperate dimension tables but as the transaction data does not contain the foregin keys, we will not be able to link them
-
 create table Product(
     id int primary key,
     product_category varchar(100),
@@ -29,13 +27,26 @@ create table Product(
     supplier_name varchar(255)
 );
 
+create table Supplier(
+    id int primary key,
+    supp_name varchar(255)
+);
+
+create table Store(
+    id int primary key,
+    store_name varchar(255)
+);
 
 create table Transaction_fact(
     id int primary key,
     customer_id int, 
-    product_id int, 
+    product_id int,
+    store_id int,
+    supplier_id int, 
     quantity int,
     date date,
     foreign key (customer_id) references Customer(id),
-    foreign key (product_id) references Product(id)
+    foreign key (product_id) references Product(id),
+    foreign key (store_id) references Store(id),
+    foreign key (supplier_id) references Supplier(id)
 );
