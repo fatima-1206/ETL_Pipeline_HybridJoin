@@ -13,6 +13,10 @@ if "db_url" not in st.session_state:
     st.session_state.db_url = ""
 if "engine" not in st.session_state:
     st.session_state.engine = None
+if "load_master_data" not in st.session_state:
+    st.session_state.engine = None
+if "start_etl" not in st.session_state:
+    st.session_state.start_etl = None
     
 if not st.session_state.get("db_connected"):
     # ----------------------------------------------------------------------------------
@@ -71,3 +75,8 @@ if not st.session_state.get("db_connected"):
 
 if st.session_state.db_connected:
     st.button("Disconnect", on_click=lambda: st.session_state.update({"db_connected": False}))
+    st.button("Load Master Data", on_click=lambda: st.session_state.update({"load_master_data": True}))
+    if st.session_state.get("load_master_data"):
+        st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
+        if st.session_state.get("start_etl"):
+            pass # Placeholder for ETL process initiation
