@@ -11,28 +11,26 @@ TRANSACTION_DATA_FILE = "data/transactional_data.csv"
 def already_loaded(engine, table_name, df):
     with engine.connect() as conn:
         # Check row count
-        result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
-        row_count = result.scalar()
-        
-        if (df.shape[0] != row_count) or row_count == 0:
+        row_count = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar()
+        if df.shape[0] != row_count or row_count == 0:
             return False
-        
-        # Check first 5 rows
-        sample_db_start = conn.execute(text(f"SELECT * FROM {table_name} LIMIT 5")).fetchall()
-        sample_db_start = [list(row) for row in sample_db_start]
-        sample_csv_start = df.head(5).values.tolist()
-        
-        # Check last 5 rows
-        sample_db_end = conn.execute(text(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT 5")).fetchall()
-        sample_db_end = [list(row) for row in sample_db_end]
-        # [::-1]  # reverse to match CSV order
-        sample_csv_end = df.tail(5).values.tolist()
-        
+
+        # Sample 5 random primary keys
+        pk = df.columns[0]
+        sample_values = df[pk].sample(n=5, random_state=1).tolist()
+
+        # Use named parameters
+        placeholders = ", ".join([f":val{i}" for i in range(len(sample_values))])
+        query = text(f"SELECT {pk} FROM {table_name} WHERE {pk} IN ({placeholders})")
+
+        # Build dict of parameters
+        params = {f"val{i}": v for i, v in enumerate(sample_values)}
+
+        result = conn.execute(query, params)
+        sample_db_values = [row[0] for row in result.fetchall()]
+
         # Compare
-        if sample_db_start == sample_csv_start and sample_db_end == sample_csv_end:
-            return True
-        
-        return False
+        return sorted(sample_db_values) == sorted(sample_values)
 
 
 def load_csv(from_csv, to_table, columns_to, engine, drop_columns=None):
