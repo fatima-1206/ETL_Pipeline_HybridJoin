@@ -1,0 +1,16 @@
+An Event-Based Near Real-Time Data Integration Architecture
+https://ieeexplore.ieee.org/document/4815048
+
+A robust join operator to process streaming data in real-time data warehousing
+https://ieeexplore.ieee.org/document/6693964
+
+
+HYBRIDJOIN for Near-Real-Time Data Warehousing
+https://www.igi-global.com/gateway/article/58636#pnlRecommendationForm
+
+In the ETL (Extract-Transform-Load) layer, a number of transformations are performed such as the detection of duplicate tuples, identification of newly inserted tuples, and the enriching of updates with values from the master data. Enrichment in particular can often be expressed as a join between the update stream and the master data (Naeem, Dobbie, & Weber, 2008). One important example of enrichment is a key transformation. Normally the key used in the data source is different from that in the data warehouse and therefore needs to be replaced. This transformation can be obtained by implementing a join operation between the update tuples and a lookup table. The lookup table contains the mapping between the source keys and the warehouse keys. Figure 1 shows a graphical interpretation of such a transformation. The attributes with column name id in both data sources DS1 and DS2 contain the source data keys and the attribute with name warehouse key in the lookup table contains the warehouse key value corresponding to these data source keys. Before loading each transaction into the data warehouse each source key is replaced by the warehouse key with the help of a join operator.
+In traditional data warehousing the update tuples are buffered in memory and joined when resources become available (Wilschut & Apers, 1991; Shapiro, 1986). Whereas, in real-time data warehousing these update tuples are joined immediately when they are generated in the data sources. One important factor related to the join is that both inputs of the join come from different sources with different arrival rates. The input from the data sources is in the form of an update stream which is fast, while the access rate of the lookup table is comparatively slow due to disk I/O cost.
+
+
+https://medium.com/@hammad.javaid826/revolutionizing-retail-real-time-etl-with-hybrid-join-for-data-warehousing-in-java-a01c5cfebe50
+
