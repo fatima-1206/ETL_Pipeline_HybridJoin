@@ -10,20 +10,30 @@ TRANSACTION_DATA_FILE = "data/transactional_data.csv"
 
 def already_loaded(engine, table_name, df):
     with engine.connect() as conn:
+        # Check row count
         result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
         row_count = result.scalar()
-    
-    if (df.shape[0] != row_count) or row_count == 0:
+        
+        if (df.shape[0] != row_count) or row_count == 0:
+            return False
+        
+        # Check first 5 rows
+        sample_db_start = conn.execute(text(f"SELECT * FROM {table_name} LIMIT 5")).fetchall()
+        sample_db_start = [list(row) for row in sample_db_start]
+        sample_csv_start = df.head(5).values.tolist()
+        
+        # Check last 5 rows
+        sample_db_end = conn.execute(text(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT 5")).fetchall()
+        sample_db_end = [list(row) for row in sample_db_end]
+        # [::-1]  # reverse to match CSV order
+        sample_csv_end = df.tail(5).values.tolist()
+        
+        # Compare
+        if sample_db_start == sample_csv_start and sample_db_end == sample_csv_end:
+            return True
+        
         return False
-    # the row count is same, so it could already be loaded
-    # to confirm, we check the first few and last few rows
-    sample_db = conn.execute(text(f"SELECT * FROM {table_name} LIMIT 5", con=engine)).fetchall()
-    sample_csv_start = df.head(5)
-    sample_db_end = conn.execute(text(f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT 5")).fetchall()
-    sample_csv_end = df.tail(5)
-    if list(sample_db) == sample_csv_start.values.tolist() and list(sample_db_end) == sample_csv_end.values.tolist():
-        return True
-    return False
+
 
 def load_csv(from_csv, to_table, columns_to, engine, drop_columns=None):
     df = pd.read_csv(from_csv)
@@ -64,23 +74,6 @@ def load_master_data(engine):
         drop_columns=[0],  # drop the first unnamed index column
         engine=engine
     )
-#     create table Product(
-#     id int primary key,
-#     product_category varchar(100),
-#     price decimal(10,2)
-# );
-
-# create table Supplier(
-#     id int primary key,
-#     supp_name varchar(255)
-# );
-
-# create table Store(
-#     id int primary key,
-#     store_name varchar(255)
-# );
-# ,Product_ID,Product_Category,price$,storeID,supplierID,storeName,supplierName
-
     load_csv(
         from_csv=MASTER_DATA_FILES["products"],
         to_table="Product",
