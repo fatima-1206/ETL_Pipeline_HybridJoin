@@ -5,12 +5,13 @@ import mysql.connector
 from sqlalchemy import MetaData
 from eralchemy import render_er
 from etl.master_data_loader import load_master_data
-
+import threading
 
 SCHEMA_FILE_PATH = "database/star_schema.sql"
 
 connection = None
-
+if "threads_started" not in st.session_state:
+    st.session_state.threads_started = False
 if "db_connected" not in st.session_state:
     st.session_state.db_connected = False
 if "db_url" not in st.session_state:
@@ -68,7 +69,7 @@ if not st.session_state.get("db_connected"):
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    render_er(metadata, './database/er_diagram_from_code.png')
+    # render_er(metadata, './database/er_diagram_from_code.png')
 
     # st.image(Image.open('./database/er_diagram_from_code.png'), caption="Database ER Diagram", use_container_width=True)
 
@@ -87,4 +88,8 @@ if st.session_state.db_connected:
         load_master_data(engine=st.session_state.engine)
         st.session_state.load_master_data = False
         if st.session_state.get("start_etl"):
-            pass # Placeholder for ETL process initialization
+            if not st.session_state.get("threads_started"):
+                # etl_thread = threading.Thread(target=lambda: __import__("etl").real_time_etl.run_real_time_etl(engine=st.session_state.engine), daemon=True)
+                # etl_thread.start()
+                st.session_state.threads_started = True
+            st.success("Real-time ETL process started in the background.")

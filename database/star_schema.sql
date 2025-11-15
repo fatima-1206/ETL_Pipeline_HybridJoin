@@ -21,10 +21,6 @@ create table Product(
     id VARCHAR(50) primary key,
     product_category varchar(100),
     price decimal(10,2)
-    -- store_id int,
-    -- supplier_id int,
-    -- store_name varchar(255),
-    -- supplier_name varchar(255)
 );
 
 create table Supplier(
@@ -55,6 +51,24 @@ create table Transaction_fact(
     date_ date,
 
     quantity int,
+
+    gender enum ('M','F','O','U' ),
+    age varchar(30),
+    occupation int,
+    city_category enum ('A','B','C' ),
+    stay_in_current_city_years int,
+    marital_status boolean,
+
+    product_category varchar(100),
+    price decimal(10,2),
+
+    day_ int,
+    month_ int,
+    quarter_ int,
+    year_ int,
+
+    supplier_name varchar(255),
+    store_name varchar(255),
 
     foreign key (date_) references Time_(date_),
     foreign key (customer_id) references Customer(id),
