@@ -10,3 +10,4 @@ STREAM_BUFFER_SIZE = 1000
 HASH_TABLE_SLOTS = 10000
 DISK_PARTITION_SIZE = 500
 W = HASH_TABLE_SLOTS  # Initial available slots in the hash table = hS
+

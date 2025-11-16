@@ -1,7 +1,7 @@
 import sqlalchemy
 import pandas as pd
 from sqlalchemy import text
-from constants import MASTER_DATA_FILES
+from etl.constants import MASTER_DATA_FILES
 def already_loaded(engine, table_name, df):
     with engine.connect() as conn:
         # Check row count

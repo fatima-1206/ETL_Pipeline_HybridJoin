@@ -6,7 +6,9 @@ from sqlalchemy import MetaData
 from eralchemy import render_er
 from etl.master_data_loader import load_master_data
 import threading
-from etl.extract import run_real_time_etl
+from etl import extract 
+import etl.constants as constants
+from queue import Queue
 
 SCHEMA_FILE_PATH = "database/star_schema.sql"
 
@@ -23,6 +25,19 @@ if "load_master_data" not in st.session_state:
     st.session_state.load_master_data = None
 if "start_etl" not in st.session_state:
     st.session_state.start_etl = None
+
+
+if 'STREAM_BUFFER' not in st.session_state:
+    st.session_state.STREAM_BUFFER = []
+if 'HASH_TABLE' not in st.session_state: #H
+    st.session_state.HASH_TABLE = {}
+if 'QUEUE' not in st.session_state:
+    st.session_state.QUEUE = Queue()
+if 'DISK_BUFFER' not in st.session_state:
+    st.session_state.DISK_BUFFER = []
+if 'W' not in st.session_state:
+    st.session_state.W = constants.W
+    
     
 if not st.session_state.get("db_connected"):
     # ----------------------------------------------------------------------------------
@@ -80,17 +95,20 @@ if not st.session_state.get("db_connected"):
 
 
 
+
+# if db connected, set up buttons to load master data and start etl process
 if st.session_state.db_connected:
     st.button("Disconnect", on_click=lambda: st.session_state.update({"db_connected": False}))
     st.button("Load Master Data", on_click=lambda: st.session_state.update({"load_master_data": True}))
     
+    # if load master data is clicked, load master data and set up a button to start etl process
     if st.session_state.get("load_master_data"):
         st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
         load_master_data(engine=st.session_state.engine)
         st.session_state.load_master_data = False
-        if st.session_state.get("start_etl"):
-            if not st.session_state.get("threads_started"):
-                etl_thread = threading.Thread(target=lambda: run_real_time_etl(), daemon=True)
-                etl_thread.start()
-                st.session_state.threads_started = True
-            st.success("Real-time ETL process started in the background.")
+    if st.session_state.get("start_etl") and not st.session_state.get("threads_started"):
+        st.session_state.threads_started = True  # mark before starting thread
+        st.success("Starting real-time ETL process in the background...")
+
+        etl_thread = threading.Thread(target=extract.extract_data, daemon=True)
+        etl_thread.start()
