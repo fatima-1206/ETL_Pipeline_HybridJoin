@@ -27,16 +27,6 @@ if "start_etl" not in st.session_state:
     st.session_state.start_etl = None
 
 
-if 'STREAM_BUFFER' not in st.session_state:
-    st.session_state.STREAM_BUFFER = []
-if 'HASH_TABLE' not in st.session_state: #H
-    st.session_state.HASH_TABLE = {}
-if 'QUEUE' not in st.session_state:
-    st.session_state.QUEUE = Queue()
-if 'DISK_BUFFER' not in st.session_state:
-    st.session_state.DISK_BUFFER = []
-if 'W' not in st.session_state:
-    st.session_state.W = constants.W
     
     
 if not st.session_state.get("db_connected"):
