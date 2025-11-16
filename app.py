@@ -6,7 +6,7 @@ from sqlalchemy import MetaData
 from eralchemy import render_er
 from etl.master_data_loader import load_master_data
 import threading
-
+from etl.extract import run_real_time_etl
 SCHEMA_FILE_PATH = "database/star_schema.sql"
 
 connection = None
@@ -89,7 +89,7 @@ if st.session_state.db_connected:
         st.session_state.load_master_data = False
         if st.session_state.get("start_etl"):
             if not st.session_state.get("threads_started"):
-                # etl_thread = threading.Thread(target=lambda: __import__("etl").real_time_etl.run_real_time_etl(engine=st.session_state.engine), daemon=True)
-                # etl_thread.start()
+                etl_thread = threading.Thread(target=lambda: run_real_time_etl(), daemon=True)
+                etl_thread.start()
                 st.session_state.threads_started = True
             st.success("Real-time ETL process started in the background.")
