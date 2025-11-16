@@ -31,7 +31,12 @@ def load_disk_buffer(key: str, col_name: str, table_name:str, connection_string:
     engine = sqlalchemy.create_engine(connection_string)
     connection = engine.connect()
     # load rows from the table where join_key = key
-    query = f"SELECT * FROM {table_name} WHERE {col_name} = '{key}' LIMIT {constants.DISK_PARTITION_SIZE};"
+    query = f"""
+            SELECT * FROM {table_name}
+            WHERE {col_name} >= {key}
+            ORDER BY {col_name}
+            LIMIT {constants.DISK_PARTITION_SIZE}
+        """
     result = connection.execute(sqlalchemy.text(query))
     rows = result.fetchall()
     columns = result.keys()
@@ -51,8 +56,8 @@ def hybrid_join(stream:list, join_key: str, join_to:str, dimension_table:str, co
     stream = pd.DataFrame(stream)
     stream.columns = constants.STREAM_COLUMNS
     
-    print(f"DEBUG: Stream columns: {list(stream.columns)}")
-    print(f"DEBUG: First stream row: {stream.iloc[0].to_dict() if len(stream) > 0 else 'EMPTY'}")
+    # print(f"DEBUG: Stream columns: {list(stream.columns)}")
+    # print(f"DEBUG: First stream row: {stream.iloc[0].to_dict() if len(stream) > 0 else 'EMPTY'}")
     
     # Save the first key before processing
     oldest_key = None
@@ -71,21 +76,21 @@ def hybrid_join(stream:list, join_key: str, join_to:str, dimension_table:str, co
             HASH_TABLE[key] = []
         HASH_TABLE[key].append(stream_row)
     
-    print(f"DEBUG: Hash table size: {len(HASH_TABLE)}, oldest_key: {oldest_key}")
+    # print(f"DEBUG: Hash table size: {len(HASH_TABLE)}, oldest_key: {oldest_key}")
     
     # Load disk buffer with the oldest key we saved
     if oldest_key is not None:
         load_disk_buffer(oldest_key, join_to, dimension_table, connection_string)
     
-    print(f"DEBUG: Disk buffer size: {len(DISK_BUFFER)}")
-    if len(DISK_BUFFER) > 0:
-        print(f"DEBUG: First disk row: {DISK_BUFFER[0]}")
+    # print(f"DEBUG: Disk buffer size: {len(DISK_BUFFER)}")
+    # if len(DISK_BUFFER) > 0:
+    #     print(f"DEBUG: First disk row: {DISK_BUFFER[0]}")
     
     # now perform the join using the hash table and disk buffer
     for disk_row in DISK_BUFFER:
         disk_row_dict = dict(disk_row)
         key = str(disk_row_dict[join_to])
-        print(f"DEBUG: Checking disk key {key} (type: {type(key)}) in hash table")
+        # print(f"DEBUG: Checking disk key {key} (type: {type(key)}) in hash table")
         if key in HASH_TABLE:
             for stream_row in HASH_TABLE[key]:
                 # Remove disk row 'id' to avoid duplication

@@ -1,7 +1,7 @@
 from etl.extract import load_partition, TRANSACTION_DATA_FILE, STREAM_BUFFER_SIZE, STREAM_BUFFER, FILE_READ_INDEX
 import threading
-from etl.hybridjoin import hybrid_join, insert_fact_table
-
+from etl.hybridjoin import hybrid_join, insert_fact_table, HASH_TABLE
+from etl import constants
 lock = threading.Lock()
 
 def extract_data():
@@ -27,9 +27,13 @@ def join_worker(connection_string:str):
         with lock:
             if len(STREAM_BUFFER) == 0:
                 continue
-            buffer_copy = STREAM_BUFFER.copy()
-            STREAM_BUFFER.clear()  # Add this line
-        
+            # only send as much tupples as the empty slots in the hash table
+            if len(HASH_TABLE) >= constants.HASH_TABLE_SIZE:
+                continue
+            empty_slots = constants.HASH_TABLE_SIZE - len(HASH_TABLE)
+            buffer_copy = STREAM_BUFFER[:empty_slots]
+            STREAM_BUFFER = STREAM_BUFFER[empty_slots:]
+        print(f"Processing {len(buffer_copy)} rows from stream buffer")
         # perform hybrid join
         joined_rows = hybrid_join(
             buffer_copy,
