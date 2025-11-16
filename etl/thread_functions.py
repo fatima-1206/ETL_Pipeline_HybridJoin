@@ -22,7 +22,7 @@ def extract_data():
             STREAM_BUFFER.extend(partition)
             
             
-def join_worker(connection_string:str):
+def join_worker(connection_string: str):
     global STREAM_BUFFER
     customer_joiner = HybridJoin(
         join_key="customer_id",
@@ -36,44 +36,66 @@ def join_worker(connection_string:str):
         dimension_table="Product",
         connection_string=connection_string
     )
+    store_joiner = HybridJoin(
+        join_key="store_id",
+        join_to="id",
+        dimension_table="Store",
+        connection_string=connection_string
+    )
+    supplier_joiner = HybridJoin(
+        join_key="supplier_id",
+        join_to="id",
+        dimension_table="Supplier",
+        connection_string=connection_string
+    )
+    
     while True:
+        # Extract data from buffer
         with lock:
             if len(STREAM_BUFFER) == 0:
                 continue
-            # only send as much tupples as the empty slots in the hash table
-            if len(customer_joiner.HASH_TABLE) >= constants.HASH_TABLE_SIZE:
-                continue
+            
             empty_slots = constants.HASH_TABLE_SIZE - len(customer_joiner.HASH_TABLE)
+            if empty_slots == 0:
+                continue
+            
             buffer_copy = STREAM_BUFFER[:empty_slots]
             STREAM_BUFFER = STREAM_BUFFER[empty_slots:]
         
+        # Pipeline joins
         print(f"Processing {len(buffer_copy)} rows from stream buffer")
         
         customer_joined = customer_joiner.hybrid_join(buffer_copy)
         print(f"Customer joined {len(customer_joined)} rows")
         
-        if len(customer_joined) > 0:
-            product_buffer = []
-            for row in customer_joined:
-                # Keep only: transaction_id, customer_id, product_id, quantity, date
-                product_row = row[constants.STREAM_COLUMNS].tolist()
-                product_buffer.append(product_row)
-            
-            empty_slots = constants.HASH_TABLE_SIZE - len(product_joiner.HASH_TABLE)
-            product_buffer = product_buffer[:empty_slots]
-            
-            product_joined = product_joiner.hybrid_join(product_buffer)
-            print(f"Product joined {len(product_joined)} rows")
-            
-            if len(product_joined) > 0:
-                insert_fact_table(
-                    product_joined,
-                    fact_table_name="Transaction_fact",
-                    connection_string=connection_string
-                )
-                print(f"Inserted {len(product_joined)} rows into FactSales")
-            
+        if len(customer_joined) == 0:
+            continue
         
+        # Convert to list format for next join
+        product_buffer = [row[constants.STREAM_COLUMNS].tolist() for row in customer_joined]
+        product_joined = product_joiner.hybrid_join(product_buffer)
+        print(f"Product joined {len(product_joined)} rows")
+        print("DEBUG: Sample joined row:", product_joined[0] if len(product_joined) > 0 else "No rows") 
+        
+        if len(product_joined) == 0:
+            continue
+        
+        cols = constants.STREAM_COLUMNS
+        cols.extend(['store_id', 'supplier_id'])
+        store_buffer = [row[cols].tolist() for row in product_joined]
+        store_joined = store_joiner.hybrid_join(store_buffer)
+        print(f"Store joined {len(store_joined)} rows")
+
+        if len(store_joined) == 0:
+            continue
+        
+        supplier_buffer = [row[cols].tolist() for row in store_joined]
+        supplier_joined = supplier_joiner.hybrid_join(supplier_buffer)
+        print(f"Supplier joined {len(supplier_joined)} rows")
+        print("DEBUG: Sample joined row:", supplier_joined[0] if len(supplier_joined) > 0 else "No rows")
+        # Insert final result once
+        insert_fact_table(supplier_joined, "Transaction_fact", connection_string)
+        print(f"Inserted {len(supplier_joined)} rows into FactTransaction")
 
 def insert_fact_table(rows:list, fact_table_name:str, connection_string:str):
     if len(rows) == 0:

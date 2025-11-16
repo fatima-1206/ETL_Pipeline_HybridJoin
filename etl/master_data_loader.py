@@ -78,9 +78,11 @@ def load_master_data(engine):
         columns_to={
             "Product_ID": "id",
             "Product_Category": "product_category",
-            "price$": "price"
+            "price$": "price",
+            "supplierID": "supplier_id",
+            "storeID": "store_id"
         },
-        drop_columns=[0,4,5,6,7],  # drop the first unnamed index column and unnecessary columns
+        drop_columns=[0,6,7],  # drop the first unnamed index column and unnecessary columns
         engine=engine
     )
     load_csv(

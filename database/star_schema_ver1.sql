@@ -20,9 +20,7 @@ create table Customer(
 create table Product(
     id VARCHAR(50) primary key,
     product_category varchar(100),
-    price decimal(10,2),
-    supplier_id int,
-    store_id int
+    price decimal(10,2)
 );
 
 create table Supplier(
@@ -61,7 +59,7 @@ create table Transaction_fact(
     -- quarter int,
     -- year int,
 
-    supp_name varchar(255),
+    supplier_name varchar(255),
     store_name varchar(255),
 
     -- foreign key (date) references Time_(date),
