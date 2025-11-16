@@ -20,6 +20,12 @@ def load_partition(filepath, start_index, partition_size):
             next(reader)  # Skip the first row (header)
         for i, row in enumerate(reader):
             if start_index <= i < start_index + partition_size:
+                # drop the first letter of the column product_id the fourth column
+                # print(f"DEBUG: Original row: {row}")
+                row[3] = row[3][1:]
+                # conver the digit of the string to int
+                row = [int(x) if x.isdigit() else x for x in row]
+                # print(f"DEBUG: Processed row: {row}")
                 chunk.append(row)
     # drop the first column
     chunk = [row[1:] for row in chunk]
