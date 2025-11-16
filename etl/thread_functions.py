@@ -62,7 +62,7 @@ def join_worker(connection_string: str):
             buffer_copy = STREAM_BUFFER[:empty_slots]
             STREAM_BUFFER = STREAM_BUFFER[empty_slots:]
         
-        # Pipeline joins
+        # Pipeline joins - pass Series directly, not converted to lists
         print(f"Processing {len(buffer_copy)} rows from stream buffer")
         
         customer_joined = customer_joiner.hybrid_join(buffer_copy)
@@ -71,28 +71,22 @@ def join_worker(connection_string: str):
         if len(customer_joined) == 0:
             continue
         
-        # Convert to list format for next join
-        product_buffer = [row[constants.STREAM_COLUMNS].tolist() for row in customer_joined]
-        product_joined = product_joiner.hybrid_join(product_buffer)
+        # Pass Series objects directly to next join
+        product_joined = product_joiner.hybrid_join(customer_joined)
         print(f"Product joined {len(product_joined)} rows")
-        print("DEBUG: Sample joined row:", product_joined[0] if len(product_joined) > 0 else "No rows") 
         
         if len(product_joined) == 0:
             continue
         
-        cols = constants.STREAM_COLUMNS
-        cols.extend(['store_id', 'supplier_id'])
-        store_buffer = [row[cols].tolist() for row in product_joined]
-        store_joined = store_joiner.hybrid_join(store_buffer)
+        store_joined = store_joiner.hybrid_join(product_joined)
         print(f"Store joined {len(store_joined)} rows")
 
         if len(store_joined) == 0:
             continue
         
-        supplier_buffer = [row[cols].tolist() for row in store_joined]
-        supplier_joined = supplier_joiner.hybrid_join(supplier_buffer)
+        supplier_joined = supplier_joiner.hybrid_join(store_joined)
         print(f"Supplier joined {len(supplier_joined)} rows")
-        print("DEBUG: Sample joined row:", supplier_joined[0] if len(supplier_joined) > 0 else "No rows")
+        
         # Insert final result once
         insert_fact_table(supplier_joined, "Transaction_fact", connection_string)
         print(f"Inserted {len(supplier_joined)} rows into FactTransaction")

@@ -53,19 +53,26 @@ class HybridJoin():
         
 
     # joins stream df to disk df on join key
-    def hybrid_join(self, stream:list) -> list:
+    def hybrid_join(self, stream: list) -> list:
         result_rows = []
-        stream = pd.DataFrame(stream)
-        stream.columns = constants.STREAM_COLUMNS
+        
+        # Handle both list of lists and list of Series
+        if isinstance(stream[0], pd.Series):
+            # Already Series objects, use directly
+            stream_series = stream
+        else:
+            # Convert list of lists to DataFrame
+            stream_df = pd.DataFrame(stream)
+            stream_df.columns = constants.STREAM_COLUMNS
+            stream_series = [row for _, row in stream_df.iterrows()]
         
         oldest_key = None
         
-        for _, row in stream.iterrows():
-            key = str(row[self.join_key])  # Convert to string for consistent key type
+        for stream_row in stream_series:
+            key = str(stream_row[self.join_key])
             if oldest_key is None:
                 oldest_key = key
-            self.QUEUE.put((key, row))
-            stream.drop(index=_, inplace=True)
+            self.QUEUE.put((key, stream_row))
         
         # Build hash table with string keys
         while not self.QUEUE.empty():
@@ -80,12 +87,12 @@ class HybridJoin():
         # Join with consistent string keys
         for disk_row in self.DISK_BUFFER:
             disk_row_dict = dict(disk_row)
-            key = str(disk_row_dict[self.join_to])  # Ensure string key
+            key = str(disk_row_dict[self.join_to])
             if key in self.HASH_TABLE:
                 for stream_row in self.HASH_TABLE[key]:
                     disk_row_dict_copy = disk_row_dict.copy()
                     disk_row_dict_copy.pop('id', None)
-                    merged_row = pd.concat([pd.Series(stream_row), pd.Series(disk_row_dict_copy)])
+                    merged_row = pd.concat([stream_row, pd.Series(disk_row_dict_copy)])
                     result_rows.append(merged_row)
                 del self.HASH_TABLE[key]
                 self.delete_from_queue(key)
