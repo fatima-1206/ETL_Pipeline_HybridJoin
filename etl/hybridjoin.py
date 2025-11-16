@@ -43,12 +43,13 @@ def load_disk_buffer(key: str, table_name:str, connection_string:str):
     
 
 # joins stream df to disk df on join key
-def hybrid_join(stream, join_key: str, dimension_table:str, connection_string:str) -> pd.DataFrame:
+def hybrid_join(stream:list, join_key: str, dimension_table:str, connection_string:str) -> list:
     global HASH_TABLE
     global QUEUE
     global DISK_BUFFER
     result_rows = []
-    
+    stream = pd.DataFrame(stream)
+    stream.columns = constants.STREAM_COLUMNS
     # first build a queue from the stream
     # queue : join_key1, join_key2, ...
     for _, row in stream.iterrows():
@@ -82,3 +83,23 @@ def hybrid_join(stream, join_key: str, dimension_table:str, connection_string:st
             del HASH_TABLE[key]
             # also remove the key from the queue
             delete_from_queue(key)
+    return result_rows
+
+
+
+def insert_fact_table(rows:list, fact_table_name:str, connection_string:str):
+    if len(rows) == 0:
+        return
+    # connect to the database
+    engine = sqlalchemy.create_engine(connection_string)
+    connection = engine.connect()
+    # insert the rows into the fact table
+    for row in rows:
+        columns = ', '.join(row.index)
+        values = ', '.join([f"'{str(value)}'" for value in row.values])
+        query = f"INSERT INTO {fact_table_name} ({columns}) VALUES ({values});"
+        try:
+            connection.execute(sqlalchemy.text(query))
+        except sqlalchemy.exc.DatabaseError as e:
+            print(f"Error inserting into fact table: {e}")
+    connection.close()

@@ -17,4 +17,6 @@ def load_partition(filepath, start_index, partition_size):
         for i, row in enumerate(reader):
             if start_index <= i < start_index + partition_size:
                 chunk.append(row)
+    # drop the first column
+    chunk = [row[1:] for row in chunk]
     return chunk

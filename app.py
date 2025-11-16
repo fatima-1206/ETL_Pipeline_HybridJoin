@@ -6,7 +6,7 @@ from sqlalchemy import MetaData
 from eralchemy import render_er
 from etl.master_data_loader import load_master_data
 import threading
-from etl.thread_functions import extract_data
+from etl.thread_functions import extract_data, join_worker
 import etl.constants as constants
 from queue import Queue
 
@@ -100,5 +100,12 @@ if st.session_state.db_connected:
         st.session_state.threads_started = True  # mark before starting thread
         st.success("Starting real-time ETL process in the background...")
 
+
+
         etl_thread = threading.Thread(target=extract_data, daemon=True)
         etl_thread.start()
+
+        hybrid_join_thread = threading.Thread(target=join_worker, args=(st.session_state.db_url,), daemon=True)
+        hybrid_join_thread.start()
+        
+        
