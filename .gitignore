@@ -7,3 +7,4 @@ etl/__pycache__/
 *.pyc
 *.pyo
 __pycache__
+# test.ipynb
