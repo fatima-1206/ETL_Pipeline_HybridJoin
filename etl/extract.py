@@ -14,6 +14,10 @@ def load_partition(filepath, start_index, partition_size):
     chunk = []
     with open(filepath, 'r') as f:
         reader = csv.reader(f)
+        
+        # Skip header if start_index is 0
+        if start_index == 0:
+            next(reader)  # Skip the first row (header)
         for i, row in enumerate(reader):
             if start_index <= i < start_index + partition_size:
                 chunk.append(row)

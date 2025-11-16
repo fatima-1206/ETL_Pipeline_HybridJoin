@@ -22,17 +22,19 @@ def extract_data():
             
             
 def join_worker(connection_string:str):
-    # continuously joins the stream buffers with the dimension tables using cascading hybrid join
     global STREAM_BUFFER
     while True:
         with lock:
             if len(STREAM_BUFFER) == 0:
                 continue
-            
+            buffer_copy = STREAM_BUFFER.copy()
+            STREAM_BUFFER.clear()  # Add this line
+        
         # perform hybrid join
         joined_rows = hybrid_join(
-            STREAM_BUFFER,
-            join_key="id",
+            buffer_copy,
+            join_key="customer_id",
+            join_to="id",
             dimension_table="Customer",
             connection_string=connection_string
         )

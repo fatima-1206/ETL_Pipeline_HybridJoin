@@ -23,7 +23,7 @@ def delete_from_queue(key: str):
             temp_queue.put((current_key, row))
     QUEUE = temp_queue
 
-def load_disk_buffer(key: str, table_name:str, connection_string:str):
+def load_disk_buffer(key: str, col_name: str, table_name:str, connection_string:str):
     # clear the disk buffer
     global DISK_BUFFER
     DISK_BUFFER = []
@@ -31,7 +31,7 @@ def load_disk_buffer(key: str, table_name:str, connection_string:str):
     engine = sqlalchemy.create_engine(connection_string)
     connection = engine.connect()
     # load rows from the table where join_key = key
-    query = f"SELECT * FROM {table_name} WHERE join_key = '{key}' LIMIT {constants.DISK_PARTITION_SIZE};"
+    query = f"SELECT * FROM {table_name} WHERE {col_name} = '{key}' LIMIT {constants.DISK_PARTITION_SIZE};"
     result = connection.execute(sqlalchemy.text(query))
     rows = result.fetchall()
     columns = result.keys()
@@ -43,37 +43,49 @@ def load_disk_buffer(key: str, table_name:str, connection_string:str):
     
 
 # joins stream df to disk df on join key
-def hybrid_join(stream:list, join_key: str, dimension_table:str, connection_string:str) -> list:
+def hybrid_join(stream:list, join_key: str, join_to:str, dimension_table:str, connection_string:str) -> list:
     global HASH_TABLE
     global QUEUE
     global DISK_BUFFER
     result_rows = []
     stream = pd.DataFrame(stream)
     stream.columns = constants.STREAM_COLUMNS
-    # first build a queue from the stream
-    # queue : join_key1, join_key2, ...
+    
+    print(f"DEBUG: Stream columns: {list(stream.columns)}")
+    print(f"DEBUG: First stream row: {stream.iloc[0].to_dict() if len(stream) > 0 else 'EMPTY'}")
+    
+    # Save the first key before processing
+    oldest_key = None
+    
     for _, row in stream.iterrows():
         key = row[join_key]
+        if oldest_key is None:
+            oldest_key = key
         QUEUE.put((key, row))
-        # drop the rows in the stream buffer after adding to queue
         stream.drop(index=_, inplace=True)
     
-    # now construct the hash table from the stream buffer
+    # Build hash table
     while not QUEUE.empty():
         key, stream_row = QUEUE.get()
-        if key not in HASH_TABLE and  len(HASH_TABLE)< constants.HASH_TABLE_SIZE:
+        if key not in HASH_TABLE and len(HASH_TABLE) < constants.HASH_TABLE_SIZE:
             HASH_TABLE[key] = []
         HASH_TABLE[key].append(stream_row)
-        
-    # now load the disk buffer using the oldest key in the queue
-    if not QUEUE.empty():
-        oldest_key, _ = QUEUE.queue[0]  # peek without removing
-        load_disk_buffer(oldest_key, dimension_table, connection_string)
-        
+    
+    print(f"DEBUG: Hash table size: {len(HASH_TABLE)}, oldest_key: {oldest_key}")
+    
+    # Load disk buffer with the oldest key we saved
+    if oldest_key is not None:
+        load_disk_buffer(oldest_key, join_to, dimension_table, connection_string)
+    
+    print(f"DEBUG: Disk buffer size: {len(DISK_BUFFER)}")
+    if len(DISK_BUFFER) > 0:
+        print(f"DEBUG: First disk row: {DISK_BUFFER[0]}")
+    
     # now perform the join using the hash table and disk buffer
     for disk_row in DISK_BUFFER:
         disk_row_dict = dict(disk_row)
-        key = disk_row_dict[join_key]
+        key = disk_row_dict[join_to]
+        print(f"DEBUG: Checking disk key {key} in hash table")
         if key in HASH_TABLE:
             for stream_row in HASH_TABLE[key]:
                 # merge the two rows
