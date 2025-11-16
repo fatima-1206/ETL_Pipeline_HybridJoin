@@ -1,22 +1,15 @@
+from queue import Queue
+import streamlit as st
 import time
 import pandas as pd
+import csv        
 
-def run_real_time_etl():
-    last_read_line = 0
-    stream_buffer = []
-    x = 20  # print output every x new rows
-    rows_read = 0
-    while True:
-        df = pd.read_csv("transactional_data.csv")
-        new_rows = df.iloc[last_read_line:]  # only take rows added since last read
-        for _, row in new_rows.iterrows():
-            stream_buffer.append(row)
-            rows_read += 1
-            if rows_read % x == 0:
-                print(f"Read {rows_read} rows...")
-        last_read_line = len(df)
-        # print output every x new rows
-        if rows_read > x:
-            print(f"Total rows read: {rows_read}")
 
-        time.sleep(1)  # wait 1 second before checking again
+def load_partition(filepath, start_index, partition_size):
+    chunk = []
+    with open(filepath, 'r') as f:
+        reader = csv.reader(f)
+        for i, row in enumerate(reader):
+            if start_index <= i < start_index + partition_size:
+                chunk.append(row)
+    return chunk
