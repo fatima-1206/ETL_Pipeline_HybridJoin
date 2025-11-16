@@ -45,7 +45,7 @@ if not st.session_state.get("db_connected"):
     # ----------------------------------------------------------------------------------
 
     DB_URL = f"mysql+mysqlconnector://{username}:{password}@{host}:{port}/{database}"
-
+    st.session_state.db_url = DB_URL
     # mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
     engine = sqlalchemy.create_engine(DB_URL)
     st.session_state.engine = engine
