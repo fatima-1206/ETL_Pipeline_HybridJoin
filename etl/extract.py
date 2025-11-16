@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import csv        
 from etl.constants import STREAM_BUFFER_SIZE, TRANSACTION_DATA_FILE
-
+import threading
 # we need to store how much data has been read from the file
 FILE_READ_INDEX = 0
 STREAM_BUFFER = []
@@ -18,18 +18,3 @@ def load_partition(filepath, start_index, partition_size):
             if start_index <= i < start_index + partition_size:
                 chunk.append(row)
     return chunk
-
-
-def extract_data():
-    global FILE_READ_INDEX, STREAM_BUFFER
-    while True:
-        filepath = TRANSACTION_DATA_FILE
-        partition = load_partition(
-            filepath,
-            FILE_READ_INDEX,
-            STREAM_BUFFER_SIZE-len(STREAM_BUFFER)
-        )
-        print(f"Extracted partition of size {len(partition)} from index {FILE_READ_INDEX}")
-        FILE_READ_INDEX += len(partition)
-        # append the read chunks to the stream buffer
-        STREAM_BUFFER.extend(partition)
