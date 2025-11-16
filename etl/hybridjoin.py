@@ -3,17 +3,12 @@ import streamlit as st
 import time
 import pandas as pd
 import csv        
+from constants import STREAM_BUFFER_SIZE, HASH_TABLE_SLOTS, DISK_PARTITION_SIZE, W
 
 # we will use a queue.Queue instead of collections.deque for thread safety
 # queue.Queue also uses deque internally so it is stilll implemented through a doubly linked list
 # since python does not expose pointers, we will use the id() function to get the memory address of the node
 
-
-# Initialize hybrid join components and parameters
-STREAM_BUFFER_SIZE = 1000
-HASH_TABLE_SLOTS = 10000
-DISK_PARTITION_SIZE = 500
-W = HASH_TABLE_SLOTS  # Initial available slots in the hash table = hS
 
 if 'STREAM_BUFFER' not in st.session_state:
     st.session_state.STREAM_BUFFER = []

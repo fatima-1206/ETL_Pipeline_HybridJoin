@@ -7,6 +7,7 @@ from eralchemy import render_er
 from etl.master_data_loader import load_master_data
 import threading
 from etl.extract import run_real_time_etl
+
 SCHEMA_FILE_PATH = "database/star_schema.sql"
 
 connection = None

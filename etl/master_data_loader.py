@@ -1,13 +1,7 @@
 import sqlalchemy
 import pandas as pd
 from sqlalchemy import text
-
-MASTER_DATA_FILES = {
-    "customers": "data/customer_master_data.csv",
-    "products": "data/product_master_data.csv",
-}
-TRANSACTION_DATA_FILE = "data/transactional_data.csv"
-
+from constants import MASTER_DATA_FILES
 def already_loaded(engine, table_name, df):
     with engine.connect() as conn:
         # Check row count
