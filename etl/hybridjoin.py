@@ -84,34 +84,48 @@ def hybrid_join(stream:list, join_key: str, join_to:str, dimension_table:str, co
     # now perform the join using the hash table and disk buffer
     for disk_row in DISK_BUFFER:
         disk_row_dict = dict(disk_row)
-        key = disk_row_dict[join_to]
-        print(f"DEBUG: Checking disk key {key} in hash table")
+        key = str(disk_row_dict[join_to])
+        print(f"DEBUG: Checking disk key {key} (type: {type(key)}) in hash table")
         if key in HASH_TABLE:
             for stream_row in HASH_TABLE[key]:
-                # merge the two rows
-                merged_row = pd.concat([pd.Series(stream_row), pd.Series(disk_row_dict)])
+                # Remove disk row 'id' to avoid duplication
+                disk_row_dict_copy = disk_row_dict.copy()
+                disk_row_dict_copy.pop('id', None)
+                # Merge keeping stream row as primary
+                merged_row = pd.concat([pd.Series(stream_row), pd.Series(disk_row_dict_copy)])
                 result_rows.append(merged_row)
-            # remove the stream row from the hash table to free up space
             del HASH_TABLE[key]
-            # also remove the key from the queue
             delete_from_queue(key)
     return result_rows
-
 
 
 def insert_fact_table(rows:list, fact_table_name:str, connection_string:str):
     if len(rows) == 0:
         return
-    # connect to the database
+    
     engine = sqlalchemy.create_engine(connection_string)
     connection = engine.connect()
-    # insert the rows into the fact table
-    for row in rows:
-        columns = ', '.join(row.index)
-        values = ', '.join([f"'{str(value)}'" for value in row.values])
-        query = f"INSERT INTO {fact_table_name} ({columns}) VALUES ({values});"
-        try:
-            connection.execute(sqlalchemy.text(query))
-        except sqlalchemy.exc.DatabaseError as e:
-            print(f"Error inserting into fact table: {e}")
-    connection.close()
+    transaction = connection.begin()
+    
+    try:
+        for row in rows:
+            # Skip if primary key already exists
+            columns = list(row.index)
+            values = [str(value) for value in row.values]
+            
+            columns_str = ', '.join(columns)
+            values_str = ', '.join([f"'{v}'" for v in values])
+            query = f"INSERT INTO {fact_table_name} ({columns_str}) VALUES ({values_str});"
+            
+            try:
+                connection.execute(sqlalchemy.text(query))
+            except sqlalchemy.exc.IntegrityError as e:
+                print(f"Skipping duplicate entry: {e}")
+                continue
+        
+        transaction.commit()
+    except Exception as e:
+        transaction.rollback()
+        print(f"Error in transaction: {e}")
+    finally:
+        connection.close()

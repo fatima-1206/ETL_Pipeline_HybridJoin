@@ -33,14 +33,14 @@ create table Store(
     store_name varchar(255)
 );
 
--- adding an underscore to avoid conflict with keywords
-create table Time_(
-    date_ date primary key,
-    day_ int,
-    month_ int,
-    quarter_ int,
-    year_ int
-);
+-- -- adding an underscore to avoid conflict with keywords
+-- create table Time_(
+--     date date primary key,
+--     day_ int,
+--     month_ int,
+--     quarter_ int,
+--     year_ int
+-- );
 
 create table Transaction_fact(
     id int primary key,
@@ -48,7 +48,7 @@ create table Transaction_fact(
     product_id VARCHAR(50),
     store_id int,
     supplier_id int,
-    date_ date,
+    date date,
 
     quantity int,
 
@@ -62,15 +62,15 @@ create table Transaction_fact(
     product_category varchar(100),
     price decimal(10,2),
 
-    day_ int,
-    month_ int,
-    quarter_ int,
-    year_ int,
+    day int,
+    month int,
+    quarter int,
+    year int,
 
     supplier_name varchar(255),
     store_name varchar(255),
 
-    foreign key (date_) references Time_(date_),
+    -- foreign key (date) references Time_(date),
     foreign key (customer_id) references Customer(id),
     foreign key (product_id) references Product(id),
     foreign key (store_id) references Store(id),
