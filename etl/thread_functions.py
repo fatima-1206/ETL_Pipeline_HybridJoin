@@ -30,6 +30,12 @@ def join_worker(connection_string:str):
         dimension_table="Customer",
         connection_string=connection_string
     )
+    product_joiner = HybridJoin(
+        join_key="product_id",
+        join_to="id",
+        dimension_table="Product",
+        connection_string=connection_string
+    )
     while True:
         with lock:
             if len(STREAM_BUFFER) == 0:
@@ -40,19 +46,33 @@ def join_worker(connection_string:str):
             empty_slots = constants.HASH_TABLE_SIZE - len(customer_joiner.HASH_TABLE)
             buffer_copy = STREAM_BUFFER[:empty_slots]
             STREAM_BUFFER = STREAM_BUFFER[empty_slots:]
+        
         print(f"Processing {len(buffer_copy)} rows from stream buffer")
-        # perform hybrid join
-        joined_rows = customer_joiner.hybrid_join(buffer_copy)
-        print(f"Joined {len(joined_rows)} rows from stream buffer")
-        insert_fact_table(
-            joined_rows,
-            fact_table_name="Transaction_fact",
-            connection_string=connection_string
-        )
         
-        print(f"Inserted {len(joined_rows)} rows into FactSales")
+        customer_joined = customer_joiner.hybrid_join(buffer_copy)
+        print(f"Customer joined {len(customer_joined)} rows")
         
-        
+        if len(customer_joined) > 0:
+            product_buffer = []
+            for row in customer_joined:
+                # Keep only: transaction_id, customer_id, product_id, quantity, date
+                product_row = row[constants.STREAM_COLUMNS].tolist()
+                product_buffer.append(product_row)
+            
+            empty_slots = constants.HASH_TABLE_SIZE - len(product_joiner.HASH_TABLE)
+            product_buffer = product_buffer[:empty_slots]
+            
+            product_joined = product_joiner.hybrid_join(product_buffer)
+            print(f"Product joined {len(product_joined)} rows")
+            
+            if len(product_joined) > 0:
+                insert_fact_table(
+                    product_joined,
+                    fact_table_name="Transaction_fact",
+                    connection_string=connection_string
+                )
+                print(f"Inserted {len(product_joined)} rows into FactSales")
+            
         
 
 def insert_fact_table(rows:list, fact_table_name:str, connection_string:str):

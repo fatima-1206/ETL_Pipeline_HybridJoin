@@ -62,10 +62,10 @@ create table Transaction_fact(
     product_category varchar(100),
     price decimal(10,2),
 
-    day int,
-    month int,
-    quarter int,
-    year int,
+    -- day int,
+    -- month int,
+    -- quarter int,
+    -- year int,
 
     supplier_name varchar(255),
     store_name varchar(255),
