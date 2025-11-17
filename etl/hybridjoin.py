@@ -92,6 +92,11 @@ class HybridJoin():
                 for stream_row in self.HASH_TABLE[key]:
                     disk_row_dict_copy = disk_row_dict.copy()
                     disk_row_dict_copy.pop('id', None)
+                    # also drop the scd columns valid_from, valid_to and is current
+                    disk_row_dict_copy.pop('is_current', None)
+                    disk_row_dict_copy.pop('valid_to', None)
+                    disk_row_dict_copy.pop('valid_from', None)
+
                     merged_row = pd.concat([stream_row, pd.Series(disk_row_dict_copy)])
                     result_rows.append(merged_row)
                 del self.HASH_TABLE[key]

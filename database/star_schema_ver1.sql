@@ -2,9 +2,9 @@
 -- ,Product_ID,Product_Category,price$,storeID,supplierID,storeName,supplierName
 -- ,orderID,Customer_ID,Product_ID,quantity,date
 
-drop database if exists projdb;
-create database projdb;
-use projdb;
+drop database if exists db;
+create database db;
+use db;
 
 create table Customer(
     id int primary key,

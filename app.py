@@ -33,7 +33,7 @@ if not st.session_state.get("db_connected"):
     # ----------------------------------------------------------------------------------
     # now to connect to a database, it needs to input credentials from user
     # they could be using linux, mac or windows so we need to take care of that
-    database = st.text_input("Enter your database name:", value="projdb")
+    database = st.text_input("Enter your database name:", value="db")
     password = st.text_input("Enter your database password:", type="password", value="1234")
     username = st.text_input("Enter your database username:", value="root")
     host = st.text_input("Enter your database host:", value="localhost")

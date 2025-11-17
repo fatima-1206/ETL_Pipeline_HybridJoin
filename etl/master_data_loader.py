@@ -51,6 +51,12 @@ def load_csv(from_csv, to_table, columns_to, engine, drop_columns=None):
         print(f"Data from {from_csv} is already loaded into {to_table}.")
         return
     
+    # add three more columns, for slowly changing dimensions type 2    
+    # valid_from timestamp,valid_to TIMESTAMP,is_current boolean
+
+    df["valid_from"] = pd.Timestamp.now()
+    df["valid_to"] = pd.NaT
+    df["is_current"] = True
 
     df.to_sql(to_table, con=engine, if_exists='append', index=False)
     print(f"Loaded data from {from_csv} to table {to_table}.")

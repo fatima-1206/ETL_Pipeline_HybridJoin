@@ -52,7 +52,7 @@ This will open a web interface at `http://localhost:8501`
 
 In the Streamlit interface, you'll see a form to enter database credentials:
 
-- **Database Name**: `projdb` (default)
+- **Database Name**: `db` (default)
 - **Username**: `root` (default)
 - **Password**: `1234` (default)
 - **Host**: `localhost` (default)

@@ -1,20 +1,20 @@
-use projdb;
+use db;
 
-select * from projdb.Transaction_fact tf ;
-select sum(price), tf.`month` , tf.`year`  from projdb.Transaction_fact tf group by tf.month, tf.year with rollup;
+select * from db.Transaction_fact tf ;
+select sum(price), tf.`month` , tf.`year`  from db.Transaction_fact tf group by tf.month, tf.year with rollup;
 
 -- Q1. Top Revenue-Generating Products on Weekdays and Weekends with Monthly Drill-Down Identifies the
 -- top 5 products by revenue, split by weekdays and weekends, with monthly breakdowns for a
 -- year.
 (select tf.product_id, sum(tf.price*tf.quantity) as revenue, tf.is_weekend , tf.month, tf.year  
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.product_id, tf.is_weekend , tf.`month`, tf.year with rollup
 having tf.year = 2020 and tf.is_weekend =0
 order by revenue desc
 limit 5)
 union all
 (select tf.product_id, sum(tf.price*tf.quantity) as revenue, tf.is_weekend , tf.month, tf.year  
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.product_id, tf.is_weekend , tf.`month`, tf.year with rollup
 having tf.year = 2020 and tf.is_weekend =1
 order by revenue desc
@@ -23,23 +23,23 @@ limit 5);
 -- Analyzes total purchase amounts by gender and age, detailed by city category.
 
 select sum(tf.price*tf.quantity) as purchase_ammount, tf.age, tf.gender,  tf.city_category
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by city_category , gender, age with rollup;
 
 -- Q3. Product Category Sales by Occupation
 -- Examines total sales for each product category based on customer occupation.
 select sum(tf.quantity) as total_sales, tf.product_category, tf.occupation 
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.occupation , tf.product_category with rollup;
 -- Q4. Total Purchases by Gender and Age Group with Quarterly Trend
 -- Tracks purchase amounts by gender and age across quarterly periods for the current year.
 select sum(tf.price*tf.quantity) as purchase_ammount, tf.age, tf.gender, tf.quarter
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.quarter , tf.gender, tf.age with rollup;
 -- Q5. Top Occupations by Product Category Sales
 -- Highlights the top 5 occupations driving sales within each product category.
 select sum(tf.quantity*tf.price) as total_sales, tf.product_category, tf.occupation 
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.occupation , tf.product_category with rollup;
 
 
@@ -48,14 +48,14 @@ group by tf.occupation , tf.product_category with rollup;
 -- Assesses purchase amounts by city category and marital status over the past 6 months.
 -- since tehre is no data for 2025 we will use 2020
 select sum(tf.quantity*tf.price) as purchase_ammounts, tf.`month`, tf.marital_status, tf.`year` 
-from projdb.Transaction_fact tf 
+from db.Transaction_fact tf 
 group by tf.year, tf.marital_status , tf.`month` with rollup
 having tf.year = 2020 and tf.`month` BETWEEN 5 AND 11;
 
 -- Q7. Average Purchase Amount by Stay Duration and Gender
 -- Calculates the average purchase amount based on years stayed in the city and gender.
 select avg(tf.price*tf.quantity) as avg_purchase_ammount, tf.stay_in_current_city_years, tf.gender
-from projdb.Transaction_fact tf
+from db.Transaction_fact tf
 group by tf.gender,tf.stay_in_current_city_years ;
 
 -- Q8. Top 5 Revenue-Generating Cities by Product Category
