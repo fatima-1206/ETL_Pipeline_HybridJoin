@@ -211,4 +211,3 @@ def update_master_data(engine):
                                 VALUES ({', '.join([':' + k for k in new_row.keys()])})"""),
                         new_row
                     )
-        print(f"Updated master data for table {info['table_name']}.")

@@ -7,7 +7,8 @@ create database db;
 use db;
 
 create table Customer(
-    id int primary key,
+    surrogate_id int primary key auto_increment,
+    id int,
     -- male, female, other, undefined
     gender enum ('M','F','O','U' ),
     age varchar(30),
@@ -22,7 +23,8 @@ create table Customer(
 );
 
 create table Product(
-    id VARCHAR(50) primary key,
+    surrogate_id int primary key auto_increment,
+    id varchar(50),
     product_category varchar(100),
     price decimal(10,2),
     supplier_id int,
@@ -34,7 +36,8 @@ create table Product(
 );
 
 create table Supplier(
-    id int primary key,
+    surrogate_id int primary key auto_increment,
+    id int,
     supp_name varchar(255),
     valid_from timestamp,
     valid_to TIMESTAMP,
@@ -43,7 +46,8 @@ create table Supplier(
 );
 
 create table Store(
-    id int primary key,
+    surrogate_id int primary key auto_increment,
+    id int,
     store_name varchar(255),
     valid_from timestamp,
     valid_to TIMESTAMP,
@@ -81,8 +85,8 @@ create table Transaction_fact(
     store_name varchar(255),
 
     -- foreign key (date) references Time_(date),
-    foreign key (customer_id) references Customer(id),
-    foreign key (product_id) references Product(id),
-    foreign key (store_id) references Store(id),
-    foreign key (supplier_id) references Supplier(id)
+    foreign key (customer_id) references Customer(surrogate_id),
+    foreign key (product_id) references Product(surrogate_id),
+    foreign key (store_id) references Store(surrogate_id),
+    foreign key (supplier_id) references Supplier(surrogate_id)
 );
