@@ -1,7 +1,5 @@
 use db;
 
-select * from db.Transaction_fact tf ;
-select sum(price), tf.month , tf.year  from db.Transaction_fact tf group by tf.month, tf.year with rollup;
 
 -- Q1. Top Revenue-Generating Products on Weekdays and Weekends with Monthly Drill-Down Identifies the
 -- top 5 products by revenue, split by weekdays and weekends, with monthly breakdowns for a
