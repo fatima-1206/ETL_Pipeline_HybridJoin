@@ -41,11 +41,12 @@ def load_csv(from_csv, to_table, columns_to, engine, drop_columns=None):
     # drop the rows with duplicate values for the first column (assumed to be the primary key)
     df.drop_duplicates(subset=[df.columns[0]], keep='first', inplace=True)
     # check if the first column only contains numeric values
-    if df[df.columns[0]].dtype == object and not df[df.columns[0]][0].isdigit():
-        # drop the first letter from all values in the first column
-        df[df.columns[0]] = df[df.columns[0]].str[1:]
+    if df[df.columns[0]].dtype == object and not df[df.columns[0]][0].isdigit():        
+        df[df.columns[0]] = df[df.columns[0]].astype(str).str.lstrip('P').str.strip()
+        df[df.columns[0]] = df[df.columns[0]].str.replace(r'42$', '', regex=True)
+        
     # convert the first column to integer type
-    df[df.columns[0]] = pd.to_numeric(df[df.columns[0]], errors='coerce').astype('Int64')
+    df[df.columns[0]] = pd.to_numeric(df[df.columns[0]], errors='raise').astype('Int64')
     # check if the data is already loaded
     if already_loaded(engine, to_table, df):
         print(f"Data from {from_csv} is already loaded into {to_table}.")

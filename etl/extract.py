@@ -41,6 +41,9 @@ def load_partition(filepath, start_index, partition_size):
             if start_index <= i < start_index + partition_size:
                 # drop the first letter of the column product_id the fourth column
                 row[3] = row[3][1:]
+                # check if last two digits are 42 and it is of a greater length than 2
+                if row[3][-2:] == '42' and len(row[3]) > 2:
+                    row[3] = row[3][:-2]
                 # convert the digit of the string to int
                 row = [int(x) if x.isdigit() else x for x in row]
                 chunk.append(row)

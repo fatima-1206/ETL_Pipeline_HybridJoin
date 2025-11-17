@@ -30,7 +30,7 @@ class HybridJoin():
         self.QUEUE = temp_queue
 
     def load_disk_buffer(self, key: str, col_name: str, table_name:str, connection_string:str):
-        # print(f"DEBUG: looking for {key} in {table_name} table")
+        print(f"DEBUG: looking for {key} in {table_name} table")
         # clear the disk buffer
         self.DISK_BUFFER = []
         # connect to the database
@@ -50,7 +50,7 @@ class HybridJoin():
         for row in rows:
             row = dict(zip(columns, row))
             self.DISK_BUFFER.append(row)
-        # print(f"DEBUG: loaded disk buffer of size {len(rows)}")
+        print(f"DEBUG: loaded disk buffer of size {len(rows)}")
         connection.close()
         
 
@@ -103,5 +103,14 @@ class HybridJoin():
                     result_rows.append(merged_row)
                 del self.HASH_TABLE[key]
                 self.delete_from_queue(key)
+            else:
+                # open a file and log the missing key for debugging
+                if not self.dimension_table  == 'Customer':
+                    try:
+                        with open(f"debug_missing_keys_{self.dimension_table}.log", "x") as log_file:
+                            log_file.write(f"DEBUG: key {key} not found in hash table for table {self.dimension_table}\n")
+                    except FileExistsError:
+                        with open(f"debug_missing_keys_{self.dimension_table}.log", "a") as log_file:
+                            log_file.write(f"DEBUG: key {key} not found in hash table for table {self.dimension_table}\n")
         return result_rows
 
