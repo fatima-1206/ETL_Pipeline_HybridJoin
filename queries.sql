@@ -1,72 +1,117 @@
 use db;
 
 select * from db.Transaction_fact tf ;
-select sum(price), tf.`month` , tf.`year`  from db.Transaction_fact tf group by tf.month, tf.year with rollup;
+select sum(price), tf.month , tf.year  from db.Transaction_fact tf group by tf.month, tf.year with rollup;
 
 -- Q1. Top Revenue-Generating Products on Weekdays and Weekends with Monthly Drill-Down Identifies the
 -- top 5 products by revenue, split by weekdays and weekends, with monthly breakdowns for a
 -- year.
-(select tf.product_id, sum(tf.price*tf.quantity) as revenue, tf.is_weekend , tf.month, tf.year  
-from db.Transaction_fact tf 
-group by tf.product_id, tf.is_weekend , tf.`month`, tf.year with rollup
-having tf.year = 2020 and tf.is_weekend =0
-order by revenue desc
-limit 5)
-union all
-(select tf.product_id, sum(tf.price*tf.quantity) as revenue, tf.is_weekend , tf.month, tf.year  
-from db.Transaction_fact tf 
-group by tf.product_id, tf.is_weekend , tf.`month`, tf.year with rollup
-having tf.year = 2020 and tf.is_weekend =1
-order by revenue desc
-limit 5);
+(
+    SELECT 
+        tf.product_id, SUM(tf.price * tf.quantity) AS revenue, tf.is_weekend, tf.month, tf.year
+    FROM db.Transaction_fact tf
+    WHERE tf.year = 2020 AND tf.is_weekend = 0
+    GROUP BY tf.product_id, tf.month, tf.year
+    ORDER BY revenue DESC
+    LIMIT 5
+)
+UNION ALL
+(
+    SELECT 
+        tf.product_id, SUM(tf.price * tf.quantity) AS revenue, tf.is_weekend, tf.month, tf.year
+    FROM db.Transaction_fact tf
+    WHERE tf.year = 2020 AND tf.is_weekend = 1
+    GROUP BY tf.product_id, tf.month, tf.year
+    ORDER BY revenue DESC
+    LIMIT 5
+);
 -- Q2. Customer Demographics by Purchase Amount with City Category Breakdown
 -- Analyzes total purchase amounts by gender and age, detailed by city category.
+SELECT 
+    tf.city_category, tf.gender, tf.age, SUM(tf.price * tf.quantity) AS purchase_amount
+FROM db.Transaction_fact tf
+GROUP BY tf.city_category, tf.gender, tf.age WITH ROLLUP;
 
-select sum(tf.price*tf.quantity) as purchase_ammount, tf.age, tf.gender,  tf.city_category
-from db.Transaction_fact tf 
-group by city_category , gender, age with rollup;
 
 -- Q3. Product Category Sales by Occupation
 -- Examines total sales for each product category based on customer occupation.
-select sum(tf.quantity) as total_sales, tf.product_category, tf.occupation 
-from db.Transaction_fact tf 
-group by tf.occupation , tf.product_category with rollup;
+SELECT 
+    tf.product_category, tf.occupation, SUM(tf.quantity) AS total_sales
+FROM db.Transaction_fact tf
+GROUP BY tf.product_category, tf.occupation WITH ROLLUP;
+
 -- Q4. Total Purchases by Gender and Age Group with Quarterly Trend
 -- Tracks purchase amounts by gender and age across quarterly periods for the current year.
-select sum(tf.price*tf.quantity) as purchase_ammount, tf.age, tf.gender, tf.quarter
-from db.Transaction_fact tf 
-group by tf.quarter , tf.gender, tf.age with rollup;
+SELECT 
+    tf.quarter, tf.gender, tf.age, SUM(tf.price * tf.quantity) AS total_purchase
+FROM db.Transaction_fact tf
+GROUP BY tf.quarter, tf.gender, tf.age WITH ROLLUP;
+
+
 -- Q5. Top Occupations by Product Category Sales
 -- Highlights the top 5 occupations driving sales within each product category.
-select sum(tf.quantity*tf.price) as total_sales, tf.product_category, tf.occupation 
-from db.Transaction_fact tf 
-group by tf.occupation , tf.product_category with rollup;
-
+SELECT 
+    tf.product_category, tf.occupation, SUM(tf.price * tf.quantity) AS total_sales
+FROM db.Transaction_fact tf
+GROUP BY tf.product_category, tf.occupation WITH ROLLUP;
 
 
 -- Q6. City Category Performance by Marital Status with Monthly Breakdown
 -- Assesses purchase amounts by city category and marital status over the past 6 months.
 -- since tehre is no data for 2025 we will use 2020
-select sum(tf.quantity*tf.price) as purchase_ammounts, tf.`month`, tf.marital_status, tf.`year` 
-from db.Transaction_fact tf 
-group by tf.year, tf.marital_status , tf.`month` with rollup
-having tf.year = 2020 and tf.`month` BETWEEN 5 AND 11;
+SELECT 
+    tf.year, tf.month, tf.city_category, tf.marital_status, SUM(tf.quantity * tf.price) AS purchase_amount
+FROM db.Transaction_fact tf
+WHERE tf.year = 2020 AND tf.month BETWEEN 5 AND 11
+GROUP BY tf.year, tf.city_category, tf.marital_status, tf.month WITH ROLLUP;
+
 
 -- Q7. Average Purchase Amount by Stay Duration and Gender
 -- Calculates the average purchase amount based on years stayed in the city and gender.
-select avg(tf.price*tf.quantity) as avg_purchase_ammount, tf.stay_in_current_city_years, tf.gender
-from db.Transaction_fact tf
-group by tf.gender,tf.stay_in_current_city_years ;
+SELECT 
+    tf.stay_in_current_city_years, tf.gender, AVG(tf.price * tf.quantity) AS avg_purchase_amount
+FROM db.Transaction_fact tf
+GROUP BY tf.stay_in_current_city_years, tf.gender;
 
 -- Q8. Top 5 Revenue-Generating Cities by Product Category
 -- Ranks the top 5 city categories by revenue, grouped by product category.
+SELECT t1.product_category, t1.city_category, t1.purchase_amount
+FROM (
+    SELECT 
+        product_category,
+        city_category,
+        SUM(price * quantity) AS purchase_amount
+    FROM db.Transaction_fact
+    GROUP BY product_category, city_category
+) t1
+WHERE (
+    SELECT COUNT(*)
+    FROM (
+        SELECT 
+            product_category,
+            city_category,
+            SUM(price * quantity) AS purchase_amount
+        FROM db.Transaction_fact
+        GROUP BY product_category, city_category
+    ) t2
+    WHERE t2.product_category = t1.product_category
+      AND t2.purchase_amount > t1.purchase_amount
+) < 5
+ORDER BY t1.product_category, t1.purchase_amount DESC;
 
 -- Q9. Monthly Sales Growth by Product Category
 -- Measures month-over-month sales growth percentage for each product category in the current
 -- year.
+-- don't wanna use a window function
 
 -- Q10. Weekend vs. Weekday Sales by Age Group
 -- Compares total sales by age group for weekends versus weekdays in the current year.
+SELECT 
+    tf.age, tf.is_weekend, SUM(tf.price * tf.quantity) AS total_sales
+FROM db.Transaction_fact tf
+WHERE tf.year = 2020
+GROUP BY tf.age, tf.is_weekend
+ORDER BY tf.age, tf.is_weekend;
 
 -- Q11. Top Revenue-Generating Products on Weekdays and Weekends with Monthly Drill-
 -- Down
