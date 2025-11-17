@@ -78,9 +78,7 @@ GROUP BY tf.stay_in_current_city_years, tf.gender;
 SELECT t1.product_category, t1.city_category, t1.purchase_amount
 FROM (
     SELECT 
-        product_category,
-        city_category,
-        SUM(price * quantity) AS purchase_amount
+        product_category, city_category, SUM(price * quantity) AS purchase_amount
     FROM db.Transaction_fact
     GROUP BY product_category, city_category
 ) t1
@@ -88,9 +86,7 @@ WHERE (
     SELECT COUNT(*)
     FROM (
         SELECT 
-            product_category,
-            city_category,
-            SUM(price * quantity) AS purchase_amount
+            product_category, city_category, SUM(price * quantity) AS purchase_amount
         FROM db.Transaction_fact
         GROUP BY product_category, city_category
     ) t2
@@ -140,10 +136,7 @@ ORDER BY tf.age, tf.is_weekend;
 -- Top 5 weekend products
 (
     SELECT
-        tf.product_id,
-        tf.month,
-        SUM(tf.price * tf.quantity) AS revenue,
-        'Weekend' AS day_type
+        tf.product_id, tf.month, SUM(tf.price * tf.quantity) AS revenue, 'Weekend' AS day_type
     FROM db.Transaction_fact tf
     WHERE tf.year = 2020 AND tf.is_weekend = 1
     GROUP BY tf.product_id, tf.month
@@ -154,10 +147,7 @@ UNION ALL
 -- Top 5 weekday products
 (
     SELECT
-        tf.product_id,
-        tf.month,
-        SUM(tf.price * tf.quantity) AS revenue,
-        'Weekday' AS day_type
+        tf.product_id, tf.month, SUM(tf.price * tf.quantity) AS revenue, 'Weekday' AS day_type
     FROM db.Transaction_fact tf
     WHERE tf.year = 2020 AND tf.is_weekend = 0
     GROUP BY tf.product_id, tf.month
@@ -169,14 +159,7 @@ UNION ALL
 -- Calculate the revenue growth rate for each store on a quarterly basis for 2017.
 -- Step 1: Get total revenue by store and quarter
 SELECT 
-    curr.store_id,
-    curr.quarter AS current_quarter,
-    curr.revenue AS current_revenue,
-    prev.revenue AS previous_revenue,
-    ROUND(
-        ((curr.revenue - prev.revenue) / prev.revenue) * 100,
-        2
-    ) AS growth_percent
+    curr.store_id, curr.quarter AS current_quarter, curr.revenue AS current_revenue, prev.revenue AS previous_revenue, ROUND( ((curr.revenue - prev.revenue) / prev.revenue)*100, 2) AS growth_percent
 FROM (
     SELECT store_id, quarter, SUM(price * quantity) AS revenue
     FROM db.Transaction_fact
@@ -200,10 +183,7 @@ ORDER BY store_id, current_quarter;
 -- each supplier.
 
 SELECT 
-    tf.store_id,
-    tf.supplier_id,
-    tf.product_id,
-    SUM(tf.price * tf.quantity) AS total_sales
+    tf.store_id, tf.supplier_id, tf.product_id, SUM(tf.price * tf.quantity) AS total_sales
 FROM db.Transaction_fact tf
 GROUP BY tf.store_id, tf.supplier_id, tf.product_id
 ORDER BY tf.store_id, tf.supplier_id, total_sales DESC;
@@ -233,17 +213,8 @@ ORDER BY tf.product_id, season;
 -- defined as the percentage change in revenue from one month to the next, helping identify stores
 -- or suppliers with highly fluctuating sales.
 
--- Step 1: Prepare monthly total revenue for each store-supplier pair
 SELECT 
-    curr.store_id,
-    curr.supplier_id,
-    curr.month AS current_month,
-    curr.revenue AS current_revenue,
-    prev.revenue AS previous_revenue,
-    ROUND(
-        ((curr.revenue - prev.revenue) / prev.revenue) * 100,
-        2
-    ) AS volatility
+    curr.store_id, curr.supplier_id, curr.month AS current_month, curr.revenue AS current_revenue, prev.revenue AS previous_revenue, ROUND(((curr.revenue - prev.revenue) / prev.revenue) * 100, 2) AS volatility
 FROM (
     SELECT store_id, supplier_id, month, SUM(price * quantity) AS revenue
     FROM db.Transaction_fact
@@ -272,9 +243,7 @@ ORDER BY curr.store_id, curr.supplier_id, curr.month;
 -- using a single join for pairs
 -- to find, triplets, use three joins and so on
 SELECT
-    t1.product_id AS product_1,
-    t2.product_id AS product_2,
-    COUNT(*) AS times_bought_together
+    t1.product_id AS product_1, t2.product_id AS product_2, COUNT(*) AS times_bought_together
 FROM db.Transaction_fact t1
 JOIN db.Transaction_fact t2
     ON t1.id = t2.id 
@@ -288,10 +257,7 @@ LIMIT 5;
 -- enabling a comprehensive overview from individual product-level details up to total revenue per
 -- store. This query should provide an overview of cumulative and hierarchical sales figures.
 SELECT
-    store_id,
-    supplier_id,
-    product_id,
-    SUM(price * quantity) AS yearly_revenue
+    store_id, supplier_id, product_id, SUM(price * quantity) AS yearly_revenue
 FROM db.Transaction_fact
 WHERE year = 2020
 GROUP BY store_id, supplier_id, product_id WITH ROLLUP
@@ -329,9 +295,7 @@ ORDER BY yearly_revenue DESC;
 -- as these may indicate unusual demand events.
 WITH daily_sales AS (
     SELECT
-        product_id,
-        date,
-        SUM(price * quantity) AS daily_revenue
+        product_id, date, SUM(price * quantity) AS daily_revenue
     FROM db.Transaction_fact
     GROUP BY product_id, date
 ),
@@ -343,10 +307,7 @@ avg_sales AS (
     GROUP BY product_id
 )
 SELECT
-    d.product_id,
-    d.date,
-    d.daily_revenue,
-    a.avg_revenue,
+    d.product_id, d.date, d.daily_revenue, a.avg_revenue,
     CASE 
         WHEN d.daily_revenue > 2 * a.avg_revenue THEN 'Potential Spike'
         ELSE 'Normal'
