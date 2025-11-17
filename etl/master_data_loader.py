@@ -225,5 +225,43 @@ def update_master_data(engine):
                         """),
                         new_row
                     )
+                    
+                    # Get the old surrogate key
+                    old_sk = conn.execute(
+                        text(f"SELECT surrogate_id FROM {info['table_name']} WHERE id = :pk AND is_current = FALSE"),
+                        {"pk": pk}
+                    ).scalar()
 
+                    # Get the new surrogate key (just inserted row)
+                    new_sk = conn.execute(
+                        text(f"SELECT surrogate_id FROM {info['table_name']} WHERE id = :pk AND is_current = TRUE"),
+                        {"pk": pk}
+                    ).scalar()
+
+                    # also edit the transaction fact table to update teh values
+                    # Update surrogate key in Transaction_fact
+                    conn.execute(
+                        text(f"""
+                            UPDATE Transaction_fact
+                            SET {info['table_name']}_id = :new_sk
+                            WHERE {info['table_name']}_id = :old_sk
+                        """),
+                        {"new_sk": new_sk, "old_sk": old_sk}
+                    )
+
+                    # check if any other columns of that table are present in the transaction fact table and update them too
+                    # ONLY update denormalized attributes, NOT foreign keys
+                    for col in info["columns_to"].values():
+                        if col != "id" and not col.endswith("_id"):  # Skip foreign keys
+                            try:
+                                conn.execute(
+                                    text(f"""
+                                        UPDATE Transaction_fact
+                                        SET {col} = :new_value
+                                        WHERE {info['table_name'].lower()}_id = :new_sk
+                                    """),
+                                    {"new_value": row[col], "new_sk": new_sk}
+                                )
+                            except:
+                                pass  # Column doesn't exist in Transaction_fact
         print(f"Updated master data for table {info['table_name']}.")
