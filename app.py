@@ -4,7 +4,7 @@ import sqlalchemy
 import mysql.connector
 from sqlalchemy import MetaData
 from eralchemy import render_er
-from etl.master_data_loader import load_master_data
+from etl.master_data_loader import load_master_data, update_master_data
 import threading
 from etl.thread_functions import extract_data, join_worker
 import etl.constants as constants
@@ -25,7 +25,8 @@ if "load_master_data" not in st.session_state:
     st.session_state.load_master_data = None
 if "start_etl" not in st.session_state:
     st.session_state.start_etl = None
-
+if "update_master_data" not in st.session_state:
+    st.session_state.update_master_data = None
 
     
     
@@ -84,28 +85,30 @@ if not st.session_state.get("db_connected"):
     st.rerun()
 
 
-
-
 # if db connected, set up buttons to load master data and start etl process
 if st.session_state.db_connected:
     st.button("Disconnect", on_click=lambda: st.session_state.update({"db_connected": False}))
     st.button("Load Master Data", on_click=lambda: st.session_state.update({"load_master_data": True}))
+    st.button("Update Master Data", on_click=lambda: st.session_state.update({"update_master_data": True}))
     
     # if load master data is clicked, load master data and set up a button to start etl process
     if st.session_state.get("load_master_data"):
         st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
         load_master_data(engine=st.session_state.engine)
         st.session_state.load_master_data = False
+    
+    if st.session_state.get("update_master_data"):
+        st.info("Checking for modified rows and updating master data...")
+        update_master_data(engine=st.session_state.engine)
+        st.session_state.update_master_data = False
+    
     if st.session_state.get("start_etl") and not st.session_state.get("threads_started"):
         st.session_state.threads_started = True  # mark before starting thread
         st.success("Starting real-time ETL process in the background...")
-
-
 
         etl_thread = threading.Thread(target=extract_data, daemon=True)
         etl_thread.start()
 
         hybrid_join_thread = threading.Thread(target=join_worker, args=(st.session_state.db_url,), daemon=True)
         hybrid_join_thread.start()
-        
         

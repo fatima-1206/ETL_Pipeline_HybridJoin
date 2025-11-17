@@ -17,7 +17,8 @@ create table Customer(
     marital_status boolean,
     valid_from timestamp,
     valid_to TIMESTAMP,
-    is_current boolean
+    is_current boolean,
+    hash_value varchar(200)
 );
 
 create table Product(
@@ -28,7 +29,8 @@ create table Product(
     store_id int,
     valid_from timestamp,
     valid_to TIMESTAMP,
-    is_current boolean
+    is_current boolean,
+    hash_value varchar(200)
 );
 
 create table Supplier(
@@ -36,7 +38,8 @@ create table Supplier(
     supp_name varchar(255),
     valid_from timestamp,
     valid_to TIMESTAMP,
-    is_current boolean
+    is_current boolean,
+    hash_value varchar(200)
 );
 
 create table Store(
@@ -44,7 +47,8 @@ create table Store(
     store_name varchar(255),
     valid_from timestamp,
     valid_to TIMESTAMP,
-    is_current boolean
+    is_current boolean,
+    hash_value varchar(200)
 );
 
 

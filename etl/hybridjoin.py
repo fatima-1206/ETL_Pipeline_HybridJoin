@@ -110,6 +110,8 @@ class HybridJoin():
                     disk_row_dict_copy.pop('is_current', None)
                     disk_row_dict_copy.pop('valid_to', None)
                     disk_row_dict_copy.pop('valid_from', None)
+                    disk_row_dict_copy.pop('hash_value', None)
+
 
                     merged_row = pd.concat([stream_row, pd.Series(disk_row_dict_copy)])
                     result_rows.append(merged_row)
