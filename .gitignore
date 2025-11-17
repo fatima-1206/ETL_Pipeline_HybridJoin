@@ -10,3 +10,5 @@ etl/__pycache__/
 *.pyo
 __pycache__
 test.ipynb
+config.bat
+node_modules

@@ -273,11 +273,11 @@ ORDER BY
 -- popularity or demand over the year.
 SELECT
     product_id,
-    SUM(CASE WHEN month BETWEEN 1 AND 6 THEN price * quantity ELSE 0 END) AS revenue_h1,
-    SUM(CASE WHEN month BETWEEN 1 AND 6 THEN quantity ELSE 0 END) AS quantity_h1,
-    SUM(CASE WHEN month BETWEEN 7 AND 12 THEN price * quantity ELSE 0 END) AS revenue_h2,
-    SUM(CASE WHEN month BETWEEN 7 AND 12 THEN quantity ELSE 0 END) AS quantity_h2,
-    SUM(price * quantity) AS yearly_revenue,
+    SUM(CASE WHEN month > 0 AND month < 7 THEN price* quantity ELSE 0 END) AS revenue_h1,
+    SUM (CASE WHEN month > 0 AND month < 7 THEN quantity ELSE 0 END) AS quantity_h1,
+    SUM(CASE WHEN month > 6 AND month < 13 THEN quantity ELSE 0 END) AS quantity_h2,
+    SUM(CASE WHEN month > 6 AND month < 13 THEN price *quantity ELSE 0 END) AS revenue_h2,
+    SUM(price *quantity) AS yearly_revenue,
     SUM(quantity) AS yearly_quantity
 FROM db.Transaction_fact
 WHERE year = 2020
