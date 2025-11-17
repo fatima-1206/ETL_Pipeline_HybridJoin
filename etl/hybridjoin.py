@@ -30,6 +30,7 @@ class HybridJoin():
         self.QUEUE = temp_queue
 
     def load_disk_buffer(self, key: str, col_name: str, table_name:str, connection_string:str):
+        # print(f"DEBUG: looking for {key} in {table_name} table")
         # clear the disk buffer
         self.DISK_BUFFER = []
         # connect to the database
@@ -49,6 +50,7 @@ class HybridJoin():
         for row in rows:
             row = dict(zip(columns, row))
             self.DISK_BUFFER.append(row)
+        # print(f"DEBUG: loaded disk buffer of size {len(rows)}")
         connection.close()
         
 
