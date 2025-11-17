@@ -187,32 +187,43 @@ def update_master_data(engine):
         df['hash_value'] = df.apply(row_hash, axis=1)
 
         # now compare with database
-        with engine.connect() as conn:
+        with engine.begin() as conn:  # THIS is different
             for index, row in df.iterrows():
                 pk = row[df.columns[0]]
                 hash_value = row['hash_value']
+                
                 result = conn.execute(
                     text(f"SELECT hash_value FROM {info['table_name']} WHERE id = :pk AND is_current = TRUE"),
                     {"pk": pk}
                 ).fetchone()
+                
                 if result is None:
                     continue
+                
                 db_hash_value = result[0]
+                
                 if hash_value != db_hash_value:
-                    # update the row - set is_current to false and valid_to to now
                     conn.execute(
-                        text(f"UPDATE {info['table_name']} SET is_current = FALSE, valid_to = :now WHERE id = :pk AND is_current = TRUE"),
+                        text(f"""
+                            UPDATE {info['table_name']} 
+                            SET is_current = FALSE, valid_to = :now 
+                            WHERE id = :pk AND is_current = TRUE
+                        """),
                         {"now": pd.Timestamp.now(), "pk": pk}
                     )
-                    # insert new row with updated data
+                    
                     new_row = row.to_dict()
                     new_row['valid_from'] = pd.Timestamp.now()
                     new_row['valid_to'] = None
                     new_row['is_current'] = True
+                    
                     conn.execute(
-                        text(f"""INSERT INTO {info['table_name']} 
-                                ({', '.join(new_row.keys())}) 
-                                VALUES ({', '.join([':' + k for k in new_row.keys()])})"""),
+                        text(f"""
+                            INSERT INTO {info['table_name']} 
+                            ({', '.join(new_row.keys())}) 
+                            VALUES ({', '.join([':' + k for k in new_row.keys()])})
+                        """),
                         new_row
                     )
+
         print(f"Updated master data for table {info['table_name']}.")
