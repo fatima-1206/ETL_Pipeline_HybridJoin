@@ -28,6 +28,8 @@ if "start_etl" not in st.session_state:
     st.session_state.start_etl = None
 if "update_master_data" not in st.session_state:
     st.session_state.update_master_data = None
+if "master_data_loaded" not in st.session_state:
+    st.session_state.master_data_loaded = False
 
     
     
@@ -84,39 +86,50 @@ if not st.session_state.get("db_connected"):
     print("ER diagram generated successfully as 'er_diagram_from_code.png'.")
     connection.close()
     st.rerun()
+if not st.session_state.db_connected:
+    # Connection UI
+    st.header("Database Connection Setup")
+    database = st.text_input("Database Name", "db")
+    username = st.text_input("Username", "root")
+    password = st.text_input("Password", type="password", value="1234")
+    host = st.text_input("Host", "localhost")
+    port = st.text_input("Port", "3306")
+    st.warning("**Warning:** This will reset your database and erase all data.")
 
+    if st.button("Connect"):
+        # Create engine, test connection, build schema
+        ...
+        st.session_state.db_connected = True
+        st.rerun()
 
-# if db connected, set up buttons to load master data and start etl process
-if st.session_state.db_connected:
+elif st.session_state.db_connected and not st.session_state.master_data_loaded:
+    # Master Data UI
+    st.success("Connected to database successfully.")
     st.button("Disconnect", on_click=lambda: st.session_state.update({"db_connected": False}))
-    st.button("Load Master Data", on_click=lambda: st.session_state.update({"load_master_data": True}))
-    st.button("Update Master Data", on_click=lambda: st.session_state.update({"update_master_data": True}))
-    
-    # if load master data is clicked, load master data and set up a button to start etl process
-    if st.session_state.get("load_master_data"):
-        st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
+    if st.button("Load Master Data"):
         load_master_data(engine=st.session_state.engine)
-        st.session_state.load_master_data = False
-    
-    
-    if st.session_state.get("start_etl") and not st.session_state.get("threads_started"):
-        st.session_state.threads_started = True  # mark before starting thread
-        st.success("Starting real-time ETL process in the background...")
+        st.session_state.master_data_loaded = True
+        st.rerun()
 
+elif st.session_state.master_data_loaded and not st.session_state.threads_started:
+    # ETL UI
+    st.success("Master Data Loaded.")
+    if st.button("Start Real-Time ETL Process"):
         etl_thread = threading.Thread(target=extract_data, daemon=True)
         etl_thread.start()
 
         hybrid_join_thread = threading.Thread(target=join_worker, args=(st.session_state.db_url,), daemon=True)
         hybrid_join_thread.start()
-        
-    if st.session_state.get("update_master_data"):
-        st.info("Checking for modified rows and updating master data...")
-        st.session_state.update_master_data = False
+
+        st.session_state.threads_started = True
+        st.rerun()
+
+else:
+    # Post-ETL UI
+    st.success("Real-time ETL running.")
+    if st.button("Update Master Data"):
         update_master_data(engine=st.session_state.engine)
-        st.success(f"Updated master data successfully.")
-        # hide the success message after 3 seconds
-        time.sleep(3)
-        
-        st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
-        load_master_data(engine=st.session_state.engine)
+        st.success("Master Data Updated.")
+    if st.button("Disconnect"):
+        st.session_state.update({"db_connected": False, "threads_started": False})
         st.rerun()
