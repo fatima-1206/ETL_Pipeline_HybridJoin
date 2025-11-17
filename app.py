@@ -75,7 +75,7 @@ if not st.session_state.get("db_connected"):
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    # render_er(metadata, './database/er_diagram_from_code.png')
+    render_er(metadata, './database/er_diagram_from_code.png')
 
     # st.image(Image.open('./database/er_diagram_from_code.png'), caption="Database ER Diagram", use_container_width=True)
 
