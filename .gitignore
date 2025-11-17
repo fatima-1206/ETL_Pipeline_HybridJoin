@@ -1,5 +1,6 @@
 # /data
 data/*
+!data/*.txt
 # /project_files
 /env
 venv/
