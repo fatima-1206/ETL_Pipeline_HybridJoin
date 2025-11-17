@@ -4,10 +4,11 @@ from etl.hybridjoin import HybridJoin
 from etl import constants
 import sqlalchemy
 lock = threading.Lock()
+pause_event = threading.Event()  # False means running, True means paused
 
 def extract_data():
     global FILE_READ_INDEX, STREAM_BUFFER
-    while True:
+    while True and not pause_event.is_set():
         filepath = TRANSACTION_DATA_FILE
         partition = load_partition(
             filepath,
@@ -48,8 +49,8 @@ def join_worker(connection_string: str):
         dimension_table="Supplier",
         connection_string=connection_string
     )
-    
-    while True:
+
+    while True and not pause_event.is_set():
         # Extract data from buffer
         with lock:
             if len(STREAM_BUFFER) == 0:

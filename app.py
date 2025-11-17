@@ -128,7 +128,13 @@ else:
     # Post-ETL UI
     st.success("Real-time ETL running.")
     if st.button("Update Master Data"):
+        from etl.thread_functions import pause_event
+        print("Pausing ETL threads for master data update...")
+        pause_event.set()  # Pause ETL threads
+        time.sleep(3)  # Wait for threads to pause
         update_master_data(engine=st.session_state.engine)
+        pause_event.clear()  # Resume ETL threads
+        print("Resumed ETL threads after master data update.")
         st.success("Master Data Updated.")
     if st.button("Disconnect"):
         st.session_state.update({"db_connected": False, "threads_started": False})

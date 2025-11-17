@@ -34,7 +34,7 @@ This is a **Real-Time Data Warehousing System** using a Hybrid Join approach for
    pip install -r requirements.txt
    ```
 
-4. Create a Subdirectory named `data` and put the csv files inside it.
+4. Navigate to the subdirectory named `data` and put the csv files inside it.
 
 5. **Ensure MySQL is running** on your system with a root user or appropriate credentials
 
