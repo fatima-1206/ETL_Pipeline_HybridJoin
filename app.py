@@ -1,6 +1,7 @@
 from PIL import Image
 import streamlit as st
 import sqlalchemy
+import time
 import mysql.connector
 from sqlalchemy import MetaData
 from eralchemy import render_er
@@ -97,10 +98,6 @@ if st.session_state.db_connected:
         load_master_data(engine=st.session_state.engine)
         st.session_state.load_master_data = False
     
-    if st.session_state.get("update_master_data"):
-        st.info("Checking for modified rows and updating master data...")
-        update_master_data(engine=st.session_state.engine)
-        st.session_state.update_master_data = False
     
     if st.session_state.get("start_etl") and not st.session_state.get("threads_started"):
         st.session_state.threads_started = True  # mark before starting thread
@@ -112,3 +109,14 @@ if st.session_state.db_connected:
         hybrid_join_thread = threading.Thread(target=join_worker, args=(st.session_state.db_url,), daemon=True)
         hybrid_join_thread.start()
         
+    if st.session_state.get("update_master_data"):
+        st.info("Checking for modified rows and updating master data...")
+        st.session_state.update_master_data = False
+        update_master_data(engine=st.session_state.engine)
+        st.success(f"Updated master data successfully.")
+        # hide the success message after 3 seconds
+        time.sleep(3)
+        
+        st.button("Start real time ETL process", on_click=lambda: st.session_state.update({"start_etl": True}))
+        load_master_data(engine=st.session_state.engine)
+        st.rerun()

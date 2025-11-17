@@ -1,5 +1,7 @@
 import sqlalchemy
 import pandas as pd
+import streamlit as st
+import time
 from sqlalchemy import text
 from etl.constants import MASTER_DATA_FILES
 import hashlib
@@ -172,9 +174,11 @@ def update_master_data(engine):
         df = pd.read_csv(info["csv_file"])
         for col in sorted(info["drop_columns"] or [], reverse=True):
             df.drop(df.columns[col], axis=1, inplace=True)
+
         if info["columns_to"]:
             df = df.rename(columns=info["columns_to"])
-        # drop duplicates
+
+        # drop duplicates and apply the transforms
         df.drop_duplicates(subset=[df.columns[0]], keep='first', inplace=True)
         if df[df.columns[0]].dtype == object and not df[df.columns[0]][0].isdigit():        
             df[df.columns[0]] = df[df.columns[0]].astype(str).str.lstrip('P').str.strip()
@@ -211,3 +215,4 @@ def update_master_data(engine):
                                 VALUES ({', '.join([':' + k for k in new_row.keys()])})"""),
                         new_row
                     )
+        print(f"Updated master data for table {info['table_name']}.")
