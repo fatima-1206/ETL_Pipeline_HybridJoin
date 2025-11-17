@@ -55,11 +55,12 @@ create table Store(
     hash_value varchar(200)
 );
 
-
+-- number of columns = 22
 create table Transaction_fact(
     id int primary key,
+    -- these will be the surrogate keys for each columns
     customer_id int, 
-    product_id VARCHAR(50),
+    product_id int,
     store_id int,
     supplier_id int,
     date date,

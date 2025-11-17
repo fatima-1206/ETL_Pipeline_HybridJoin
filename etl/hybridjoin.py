@@ -37,9 +37,10 @@ class HybridJoin():
         engine = sqlalchemy.create_engine(connection_string)
         connection = engine.connect()
         # load rows from the table where join_key = key
+        # make sure it is the current version if SCD type 2
         query = f"""
                 SELECT * FROM {table_name}
-                WHERE {col_name} >= {key}
+                WHERE {col_name} >= {key} and is_current = TRUE
                 ORDER BY {col_name}
                 LIMIT {constants.DISK_PARTITION_SIZE}
             """
@@ -104,6 +105,11 @@ class HybridJoin():
             key = str(disk_row_dict[self.join_to])
             if key in self.HASH_TABLE:
                 for stream_row in self.HASH_TABLE[key]:
+                    # Create a copy of stream_row and remove the join key
+                    stream_row_copy = stream_row.copy()
+                    if self.join_key in stream_row_copy.index:
+                        stream_row_copy = stream_row_copy.drop(self.join_key)
+                 
                     disk_row_dict_copy = disk_row_dict.copy()
                     disk_row_dict_copy.pop('id', None)
                     # also drop the scd columns valid_from, valid_to and is current
@@ -111,20 +117,15 @@ class HybridJoin():
                     disk_row_dict_copy.pop('valid_to', None)
                     disk_row_dict_copy.pop('valid_from', None)
                     disk_row_dict_copy.pop('hash_value', None)
+                    # also drop they business key used for join
+                    disk_row_dict_copy.pop(self.join_to, None)
 
-
-                    merged_row = pd.concat([stream_row, pd.Series(disk_row_dict_copy)])
+                    # rename surrogate_id to appropriate fact table column name
+                    if 'surrogate_id' in disk_row_dict_copy:
+                        disk_row_dict_copy[f"{self.dimension_table.lower()}_id"] = disk_row_dict_copy.pop('surrogate_id')
+                    merged_row = pd.concat([stream_row_copy, pd.Series(disk_row_dict_copy)])
                     result_rows.append(merged_row)
                 del self.HASH_TABLE[key]
                 self.delete_from_queue(key)
-            # else:
-                # open a file and log the missing key for debugging
-                # if not self.dimension_table  == 'Customer':
-                #     try:
-                #         with open(f"debug_missing_keys_{self.dimension_table}.log", "x") as log_file:
-                #             log_file.write(f"DEBUG: key {key} not found in hash table for table {self.dimension_table}\n")
-                #     except FileExistsError:
-                #         with open(f"debug_missing_keys_{self.dimension_table}.log", "a") as log_file:
-                #             log_file.write(f"DEBUG: key {key} not found in hash table for table {self.dimension_table}\n")
         return result_rows
 

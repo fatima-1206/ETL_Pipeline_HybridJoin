@@ -12,7 +12,9 @@ DISK_PARTITION_SIZE = 500
 W = HASH_TABLE_SIZE  # Initial available slots in the hash table = hS
 STREAM_COLUMNS = [
     # ,orderID,Customer_ID,Product_ID,quantity,date
-    "id","customer_id","product_id","quantity","date",
+    "id",
+    "customer_id","product_id",
+    "quantity","date",
     "day",
     "month",
     "quarter",
